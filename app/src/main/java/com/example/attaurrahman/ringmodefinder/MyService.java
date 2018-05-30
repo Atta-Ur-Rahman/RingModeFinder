@@ -14,7 +14,7 @@ import android.widget.Toast;
 public class MyService extends Service {
     String strMsg, strIncomeNumber;
     double callTime, answeredTime, timeTaken;
-    boolean isAvailable;
+    boolean callPicked = true;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -24,7 +24,7 @@ public class MyService extends Service {
 
     @Override
     public void onCreate() {
-        Toast.makeText(this, " MyService Created ", Toast.LENGTH_LONG).show();
+        // Toast.makeText(this, " MyService Created ", Toast.LENGTH_LONG).show();
 
         final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(
                 Context.TELEPHONY_SERVICE);
@@ -34,10 +34,15 @@ public class MyService extends Service {
             public void onCallStateChanged(int state, String incomingNumber) {
 
                 if (state == TelephonyManager.CALL_STATE_RINGING) {
+                    callPicked = true;
                     strIncomeNumber = incomingNumber;
-                    // tts.speak(incomingNumber+" calling", TextToSpeech.QUEUE_FLUSH, null);
                     Toast.makeText(getApplicationContext(), "Phone is Ringing : " + incomingNumber, Toast.LENGTH_LONG).show();
 
+                    if (incomingNumber.length() == 11) {
+                        callPicked = true;
+                    } else {
+                        callPicked = false;
+                    }
                     callTime = System.currentTimeMillis();
 
                 }
@@ -45,16 +50,19 @@ public class MyService extends Service {
 
                     Toast.makeText(getApplicationContext(), "Phone in a call or call picked", Toast.LENGTH_LONG).show();
 
-                    callTime = 0;
+                    callPicked = false;
 
                 }
                 if (state == TelephonyManager.CALL_STATE_IDLE) {
                     //phone is neither ringing nor in a call
                     answeredTime = System.currentTimeMillis();
                     timeTaken = answeredTime - callTime;
-                    if (timeTaken >= 1000) {
-                        changeRingerMode(MyService.this);
-                        sendSMS(strIncomeNumber, strMsg);
+                    if (timeTaken >= 20000) {
+                        if (callPicked) {
+                            changeRingerMode(MyService.this);
+                            sendSMS(strIncomeNumber, strMsg);
+                        }
+
                     } else {
                         Toast.makeText(MyService.this, "Miss Call", Toast.LENGTH_SHORT).show();
                     }
@@ -69,28 +77,28 @@ public class MyService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(this, " MyService Started", Toast.LENGTH_LONG).show();
-
+        //  Toast.makeText(this, " MyService Started", Toast.LENGTH_LONG).show();
 
 
         return START_STICKY;
     }
+
     public void changeRingerMode(Context context) {
 
         AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         switch (audio.getRingerMode()) {
             case AudioManager.RINGER_MODE_NORMAL:
-                Toast.makeText(context, "normal", Toast.LENGTH_SHORT).show();
+                // Toast.makeText(context, "normal", Toast.LENGTH_SHORT).show();
 
                 strMsg = "Ringing mode";
                 break;
             case AudioManager.RINGER_MODE_SILENT:
                 strMsg = "Silent mode";
-                Toast.makeText(context, "silent", Toast.LENGTH_SHORT).show();
+                // Toast.makeText(context, "silent", Toast.LENGTH_SHORT).show();
                 break;
             case AudioManager.RINGER_MODE_VIBRATE:
-                strMsg = "Vib Mode";
-                Toast.makeText(context, "vib", Toast.LENGTH_SHORT).show();
+                strMsg = "Vibration Mode";
+                // Toast.makeText(context, "vib", Toast.LENGTH_SHORT).show();
                 break;
         }
 
